@@ -203,8 +203,8 @@ mlp-term2-2025-flight-price-prediction/
 IIT Madras BS Degree Programme | Data Science Student
 
 - 📧 Email: aryanpatil1611@gmail.com
-- 💼 LinkedIn: [Your LinkedIn](https://linkedin.com/in/aryanpatil97)
-- 🏆 Kaggle: [Your Kaggle Profile](https://kaggle.com/aryansanjaypatil)
+- 💼 LinkedIn: [LinkedIn](https://linkedin.com/in/aryanpatil97)
+- 🏆 Kaggle: [Kaggle Profile](https://kaggle.com/aryansanjaypatil)
 
 ---
 
