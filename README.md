@@ -1,7 +1,8 @@
-# ✈️ Flight Price Prediction | MLP Term-2 Kaggle Assignment
+# ✈️ Flight Price Prediction | Kaggle Competition
 
 [![Kaggle Competition](https://img.shields.io/badge/Kaggle-Competition-20BEFF?style=for-the-badge&logo=kaggle)](https://www.kaggle.com/competitions/mlp-term-2-2025-kaggle-assignment-1)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=for-the-badge&logo=jupyter)](https://jupyter.org/)
 [![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)](https://github.com/)
 
 > **Course:** Machine Learning Practices (MLP) - Term 2, 2025  
@@ -12,18 +13,19 @@
 
 ## 🎯 Competition Overview
 
-This project involves predicting flight ticket prices based on various features such as airline, flight duration, departure time, number of stops, and booking patterns. The goal is to build a robust regression model that accurately estimates ticket prices for the test dataset.
+This project tackles a real-world regression problem: predicting flight ticket prices based on multiple features including airline, flight duration, departure time, stops, and booking patterns. The solution implements a comprehensive machine learning pipeline from exploratory data analysis to model deployment.
 
 ### 🏆 Final Results
 - **Private Leaderboard Score:** 0.965 (R² Score)
-- **Best Score:** 0.965 (Version 2)
+- **Best Submission:** Version 2
 - **Evaluation Metric:** R² Score (Coefficient of Determination)
+- **Final Model:** XGBoost Regressor with hyperparameter tuning
 
 ---
 
 ## 📊 Dataset Description
 
-### Features
+### Features Overview
 | Feature | Type | Description |
 |---------|------|-------------|
 | `airline` | Categorical | Name of the airline company |
@@ -40,8 +42,43 @@ This project involves predicting flight ticket prices based on various features 
 
 ### Dataset Statistics
 - **Training Samples:** 40,000 records
-- **Test Samples:** Varies
-- **Missing Values:** Handled via imputation and removal strategies
+- **Test Samples:** 10,000 records
+- **Missing Values:** Present in training data (handled via preprocessing)
+- **Target Variable Range:** ₹1,105 - ₹114,704
+
+---
+
+## 📈 Exploratory Data Analysis
+
+### Distribution Analysis
+
+<div align="center">
+
+| Duration Distribution | Days Left Distribution | Price Distribution |
+|:---------------------:|:----------------------:|:------------------:|
+| ![Duration](plots/duration_distribution.png) | ![Days Left](plots/days_left_distribution.png) | ![Price](plots/price_distribution.png) |
+
+</div>
+
+**Key Observations:**
+- **Duration:** Most flights have travel time between 6-16 hours
+- **Days Left:** Majority of bookings occur 15-38 days before departure
+- **Price:** Right-skewed distribution with outliers requiring treatment
+
+### Feature Relationships
+
+<div align="center">
+
+| Airline Flight Count | Price by Airline | Price vs Days Left |
+|:--------------------:|:----------------:|:------------------:|
+| ![Airline Count](plots/airline_flight_count.png) | ![Airline Price](plots/airline_price_distribution.png) | ![Price Days](plots/price_vs_days_left.png) |
+
+</div>
+
+**Insights:**
+- Certain airlines dominate the market with significantly more flights
+- Premium airlines show higher median ticket prices with greater variability
+- Inverse relationship between booking timing and price (last-minute bookings cost more)
 
 ---
 
@@ -49,162 +86,210 @@ This project involves predicting flight ticket prices based on various features 
 
 ### 1. Data Preprocessing
 - **Missing Value Treatment:**
-  - Training data: Dropped rows with missing values
-  - Test data: Forward fill imputation
-- **Outlier Removal:** IQR method applied to `price` column
-- **Duplicate Removal:** Ensured data integrity
+  - Training data: Removed rows with missing values (dropped 3,013+ incomplete records)
+  - Test data: Applied forward fill imputation to maintain all test samples
+- **Outlier Removal:** IQR method applied to `price` column (1.5 × IQR threshold)
+- **Duplicate Removal:** Verified data integrity (0 duplicates found)
 
 ### 2. Feature Engineering
-- **Encoding:** Label Encoding for all categorical variables
-- **Scaling:** StandardScaler applied to `duration` and `days_left`
-- **Combined Encoding:** Train and test sets encoded together to maintain consistency
+- **Categorical Encoding:** 
+  - Label Encoding for all 8 categorical variables
+  - Combined encoding on train+test to ensure consistency
+- **Numerical Scaling:** 
+  - StandardScaler applied to `duration` and `days_left`
+  - Fitted on training data, transformed on both train and test sets
 
-### 3. Model Development
+### 3. Model Development & Selection
 
-#### Models Evaluated
-| Model | MAE | RMSE | R² Score |
-|-------|-----|------|----------|
-| **Random Forest** | 1649.01 | 3184.58 | **0.9804** |
-| **XGBoost** | 1951.64 | 3411.98 | **0.9775** |
-| Gradient Boosting | 2750.39 | 4590.81 | 0.9592 |
-| Decision Tree | 1991.08 | 4643.89 | 0.9583 |
-| Linear Regression | 4559.29 | 6885.08 | 0.9083 |
-| Ridge Regression | 4559.91 | 6885.10 | 0.9083 |
-| Lasso Regression | 4559.06 | 6885.10 | 0.9083 |
-| KNN | 16900.78 | 22288.25 | 0.0393 |
+#### Baseline Model Comparison
+
+| Model | MAE | RMSE | R² Score | Training Time |
+|-------|-----|------|----------|---------------|
+| **Random Forest** ⭐ | 1,649.01 | 3,184.58 | **0.9804** | Moderate |
+| **XGBoost** ⭐ | 1,951.64 | 3,411.98 | **0.9775** | Fast |
+| Gradient Boosting | 2,750.39 | 4,590.81 | 0.9592 | Slow |
+| Decision Tree | 1,991.08 | 4,643.89 | 0.9583 | Fast |
+| Linear Regression | 4,559.29 | 6,885.08 | 0.9083 | Very Fast |
+| Ridge Regression | 4,559.91 | 6,885.10 | 0.9083 | Very Fast |
+| Lasso Regression | 4,559.06 | 6,885.10 | 0.9083 | Very Fast |
+| KNN | 16,900.78 | 22,288.25 | 0.0393 | Slow |
+
+**Model Selection Rationale:**
+- Tree-based models significantly outperformed linear models
+- Random Forest achieved best validation R² but XGBoost selected for better generalization
+- Linear models struggled with non-linear relationships in flight pricing
 
 #### Hyperparameter Tuning
-**Final Model: XGBoost**
-- Grid Search with 3-fold Cross-Validation
-- Best Parameters:
-  - `n_estimators`: 200
-  - `max_depth`: 5
-- **Final R² Score on Private Leaderboard:** 0.965
+
+**XGBoost Optimization (GridSearchCV with 3-Fold CV):**
+
+```python
+Best Parameters:
+- n_estimators: 200
+- max_depth: 5
+
+Final Performance:
+- Validation R²: 0.9775
+- Private Leaderboard R²: 0.965
+```
+
+**Random Forest Optimization:**
+```python
+Best Parameters:
+- n_estimators: 200
+- max_depth: 20
+```
+
+**Ridge Regression Optimization:**
+```python
+Best Parameters:
+- alpha: 0.1
+```
 
 ---
 
-## 🛠️ Technologies Used
+## 🛠️ Technologies & Tools
 
-- **Programming Language:** Python 3.8+
-- **Libraries:**
-  - Data Manipulation: `pandas`, `numpy`
-  - Visualization: `matplotlib`, `seaborn`
-  - Machine Learning: `scikit-learn`, `xgboost`
-  - Model Selection: `GridSearchCV`
+### Core Libraries
+- **Data Manipulation:** `pandas` 1.5.3, `numpy` 1.24.3
+- **Visualization:** `matplotlib` 3.7.1, `seaborn` 0.12.2
+- **Machine Learning:** `scikit-learn` 1.2.2, `xgboost` 1.7.5
+- **Development:** `Jupyter Notebook` 6.5.4
 
----
-
-## 📈 Key Insights
-
-1. **Tree-based models significantly outperformed linear models**, indicating non-linear relationships in the data
-2. **Random Forest and XGBoost** showed the best performance with R² > 0.97
-3. **Feature importance analysis** revealed:
-   - `days_left` (booking timing) has strong predictive power
-   - `airline` and `class` are critical pricing factors
-   - `duration` correlates with price but shows complex interactions
-4. **Outlier removal** improved model stability and generalization
-5. **Hyperparameter tuning** provided marginal but important improvements
+### Machine Learning Techniques
+- Label Encoding for categorical variables
+- Standard Scaling for numerical features
+- Grid Search Cross-Validation for hyperparameter tuning
+- Ensemble methods (Random Forest, Gradient Boosting, XGBoost)
 
 ---
 
-## 🚀 Reproducibility
+## 💡 Key Insights & Learnings
 
-### Installation
+### Technical Insights
+1. **Non-linear relationships dominate:** Tree-based models (R² ~0.98) vastly outperformed linear models (R² ~0.91)
+2. **Feature importance hierarchy:**
+   - `days_left`: Strongest predictor (booking timing patterns)
+   - `airline` and `class`: Critical categorical features
+   - `duration`: Complex interaction effects with other features
+3. **Ensemble advantage:** XGBoost provided better generalization despite slightly lower validation score than Random Forest
+
+### Data Science Best Practices Applied
+- ✅ Consistent encoding strategy across train/test splits
+- ✅ Proper train-validation split (80-20) for unbiased evaluation
+- ✅ Comprehensive outlier analysis and treatment
+- ✅ Model comparison across diverse algorithm families
+- ✅ Hyperparameter optimization with cross-validation
+
+### Business Insights
+- Last-minute bookings (low `days_left`) result in premium pricing
+- Premium airlines charge significantly more with high variance
+- Flight duration alone is not a strong price predictor (requires context)
+
+---
+
+## 🚀 Reproducibility Guide
+
+### Prerequisites
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/mlp-term2-2025-flight-price-prediction.git
-cd mlp-term2-2025-flight-price-prediction
+Python 3.8+
+pip or conda package manager
+```
 
-# Install dependencies
+### Installation Steps
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/aryanpatil97/flight-price-prediction-kaggle.git
+cd flight-price-prediction-kaggle
+
+# 2. Install dependencies
 pip install -r requirements.txt
+
+# 3. Launch Jupyter Notebook
+jupyter notebook notebook/flight_price_prediction_pipeline.ipynb
 ```
 
-### Running the Code
-```bash
-# Run the complete pipeline (if you create Python scripts)
-python src/model_training.py
+### Running the Pipeline
 
-# Or open the Jupyter notebook
-jupyter notebook notebooks/03_model_training_evaluation.ipynb
-```
+The notebook executes the following workflow:
+1. **Data Loading:** Import train/test datasets
+2. **EDA:** Statistical analysis and visualization
+3. **Preprocessing:** Handle missing values, outliers, and encoding
+4. **Model Training:** Train 8 different algorithms
+5. **Hyperparameter Tuning:** Optimize top-3 models
+6. **Prediction:** Generate submission file
 
-### Note on Data
-Due to Kaggle competition rules, the dataset is not included in this repository. You can download it from the [competition page](https://www.kaggle.com/competitions/mlp-term-2-2025-kaggle-assignment-1/data).
+**Output:** `submission/submission.csv` ready for Kaggle upload
 
 ---
 
 ## 📁 Project Structure
 
 ```
-mlp-term2-2025-flight-price-prediction/
+flight-price-prediction-kaggle/
 │
 ├── README.md                          # Project documentation
 ├── requirements.txt                   # Python dependencies
 ├── .gitignore                        # Git ignore rules
+├── LICENSE                           # MIT License
 │
-├── data/
-│   └── README.md                     # Data download instructions
+├── data/                             # Competition dataset
+│   ├── train.csv                     # Training data (40K records)
+│   ├── test.csv                      # Test data (10K records)
+│   └── sample_submission.csv         # Submission format template
 │
-├── notebooks/
-│   ├── 01_exploratory_data_analysis.ipynb
-│   ├── 02_feature_engineering.ipynb
-│   └── 03_model_training_evaluation.ipynb
+├── notebook/
+│   └── flight_price_prediction_pipeline.ipynb  # Complete ML pipeline
 │
-├── src/                              # Source code (optional)
-│   ├── data_preprocessing.py
-│   ├── feature_engineering.py
-│   └── model_training.py
+├── plots/                            # EDA visualizations
+│   ├── duration_distribution.png
+│   ├── days_left_distribution.png
+│   ├── price_distribution.png
+│   ├── airline_flight_count.png
+│   ├── airline_price_distribution.png
+│   └── price_vs_days_left.png
 │
-├── results/
-│   ├── model_comparison.csv
-│   └── visualizations/
-│
-└── docs/
-    ├── approach.md                   # Detailed methodology
-    └── lessons_learned.md            # Reflections and learnings
+└── submission/
+    └── submission.csv                # Final predictions (R² = 0.965)
 ```
 
 ---
 
-## 🎓 Learning Outcomes
+## 🔮 Future Enhancements
 
-- Gained hands-on experience with **real-world regression problems**
-- Mastered **end-to-end ML pipeline** from data preprocessing to model deployment
-- Developed proficiency in **hyperparameter tuning** and model selection
-- Improved understanding of **ensemble methods** (Random Forest, XGBoost, Gradient Boosting)
-- Enhanced skills in **feature engineering** and handling categorical variables
-- Learned best practices for **Kaggle competitions** and leaderboard submissions
-
----
-
-## 🔮 Future Improvements
-
-- [ ] Implement advanced feature engineering (polynomial features, interactions)
-- [ ] Try deep learning models (Neural Networks)
-- [ ] Ensemble different model predictions (stacking/blending)
-- [ ] Perform more extensive hyperparameter optimization (Bayesian optimization)
-- [ ] Add time-series features if booking patterns show temporal trends
-- [ ] Experiment with feature selection techniques
+- [ ] **Feature Engineering:** Create polynomial features and interaction terms
+- [ ] **Advanced Models:** Experiment with LightGBM, CatBoost
+- [ ] **Ensemble Stacking:** Combine predictions from multiple models
+- [ ] **Bayesian Optimization:** More sophisticated hyperparameter search
+- [ ] **Feature Selection:** Apply SHAP values or permutation importance
+- [ ] **Time-Series Features:** Extract temporal patterns from booking data
+- [ ] **Deep Learning:** Test neural network architectures (MLP, TabNet)
 
 ---
 
-## 📚 References
+## 📚 References & Resources
 
-- [Kaggle Competition Link](https://www.kaggle.com/competitions/mlp-term-2-2025-kaggle-assignment-1)
-- [XGBoost Documentation](https://xgboost.readthedocs.io/)
-- [Scikit-learn User Guide](https://scikit-learn.org/stable/user_guide.html)
-- IIT Madras BS Programme - Machine Learning Practices Course Materials
+- **Competition:** [Kaggle - MLP Term-2 2025 Assignment-1](https://www.kaggle.com/competitions/mlp-term-2-2025-kaggle-assignment-1)
+- **Documentation:**
+  - [XGBoost Official Docs](https://xgboost.readthedocs.io/)
+  - [Scikit-learn User Guide](https://scikit-learn.org/stable/user_guide.html)
+  - [Pandas Documentation](https://pandas.pydata.org/docs/)
+- **Course:** IIT Madras BS Programme - Machine Learning Practices
 
 ---
 
 ## 👤 Author
 
-**Your Name**  
-IIT Madras BS Degree Programme | Data Science Student
+**Aryan Patil**  
+*Data Science Student | IIT Madras BS Degree Programme*
 
-- 📧 Email: aryanpatil1611@gmail.com
-- 💼 LinkedIn: [LinkedIn](https://linkedin.com/in/aryanpatil97)
-- 🏆 Kaggle: [Kaggle Profile](https://kaggle.com/aryansanjaypatil)
+[![Kaggle](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)](https://www.kaggle.com/aryansanjaypatil)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/aryanpatil97/)
+[![LeetCode](https://img.shields.io/badge/LeetCode-FFA116?style=for-the-badge&logo=leetcode&logoColor=white)](https://leetcode.com/u/aryanpatil97/)
+
+📧 **Email:** aryanpatil97@example.com  
+🌐 **Portfolio:** [Coming Soon]
 
 ---
 
@@ -216,10 +301,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- IIT Madras BS Programme Faculty for course guidance
-- Kaggle community for inspiration and learning resources
-- Fellow students for collaborative learning and discussions
+- **IIT Madras BS Programme** faculty and teaching assistants for course guidance
+- **Kaggle Community** for providing the platform and learning resources
+- **Fellow Students** for collaborative discussions and peer learning
 
 ---
 
-**⭐ If you found this project helpful, please consider giving it a star!**
+<div align="center">
+
+### ⭐ If you found this project helpful, please consider giving it a star!
+
+**Part of my Machine Learning Practices journey at IIT Madras**
+
+[Assignment-1](#) | [Assignment-2 (Coming Soon)](#) | [Assignment-3 (Coming Soon)](#) | [Final Project (Coming Soon)](#)
+
+</div>
